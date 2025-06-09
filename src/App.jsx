@@ -1,58 +1,95 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import cloudflareLogo from './assets/Cloudflare_Logo.svg'
+import { useState, useEffect } from 'react'
+import { Folder, FileImage, ArrowLeft } from 'lucide-react'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
-  const [name, setName] = useState('unknown')
+function FileBrowser() {
+  const [path, setPath] = useState('')
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [preview, setPreview] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError('')
+    fetch(`/api/list?prefix=${encodeURIComponent(path)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch')
+        return res.json()
+      })
+      .then((data) => {
+        setItems(data.items || [])
+        setLoading(false)
+      })
+      .catch((e) => {
+        setError(e.message)
+        setLoading(false)
+      })
+  }, [path])
+
+  function openFolder(folder) {
+    setPath(path ? path + folder + '/' : folder + '/')
+  }
+  function goUp() {
+    if (!path) return
+    const parts = path.split('/').filter(Boolean)
+    parts.pop()
+    setPath(parts.length ? parts.join('/') + '/' : '')
+  }
+  function openImage(key) {
+    setPreview(key)
+  }
+  function closePreview() {
+    setPreview(null)
+  }
 
   return (
-    <>
-      <div>
-        <a href='https://vite.dev' target='_blank'>
-          <img src={viteLogo} className='logo' alt='Vite logo' />
-        </a>
-        <a href='https://react.dev' target='_blank'>
-          <img src={reactLogo} className='logo react' alt='React logo' />
-        </a>
-        <a href='https://workers.cloudflare.com/' target='_blank'>
-          <img src={cloudflareLogo} className='logo cloudflare' alt='Cloudflare logo' />
-        </a>
+    <div>
+      <h2>R2 File Browser</h2>
+      <div style={{ textAlign: 'left', maxWidth: 600, margin: '0 auto' }}>
+        <div style={{ marginBottom: 8 }}>
+          {path && (
+            <button onClick={goUp} aria-label="Go up" style={{ marginRight: 8 }}>
+              <ArrowLeft size={18} /> Up
+            </button>
+          )}
+          <span style={{ color: '#888' }}>{'/' + path}</span>
+        </div>
+        {loading && <div>Loading...</div>}
+        {error && <div style={{ color: 'red' }}>{error}</div>}
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {items.map((item) => (
+            <li key={item.key} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+              {item.type === 'folder' ? (
+                <>
+                  <Folder size={18} style={{ marginRight: 6 }} />
+                  <button style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer' }} onClick={() => openFolder(item.name)}>
+                    {item.name}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <FileImage size={18} style={{ marginRight: 6 }} />
+                  <button style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer' }} onClick={() => openImage(item.key)}>
+                    {item.name}
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        {preview && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={closePreview}>
+            <img src={`/api/image?key=${encodeURIComponent(preview)}`} alt={preview} style={{ maxWidth: '90vw', maxHeight: '90vh', background: '#fff', padding: 8, borderRadius: 8 }} />
+          </div>
+        )}
       </div>
-      <h1>Vite + React + Cloudflare</h1>
-      <div className='card'>
-        <button
-          onClick={() => setCount((count) => count + 1)}
-          aria-label='increment'
-        >
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <div className='card'>
-        <button
-          onClick={() => {
-            fetch('/api/')
-              .then((res) => res.json())
-              .then((data) => setName(data.name))
-          }}
-          aria-label='get name'
-        >
-          Name from API is: {name}
-        </button>
-        <p>
-          Edit <code>worker/index.js</code> to change the name
-        </p>
-      </div>
-      <p className='read-the-docs'>
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
+}
+
+function App() {
+  return <FileBrowser />
 }
 
 export default App
