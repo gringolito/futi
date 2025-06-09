@@ -45,8 +45,8 @@ function FileBrowser() {
 
   return (
     <div>
-      <h2>R2 File Browser</h2>
-      <div style={{ textAlign: 'left', maxWidth: 600, margin: '0 auto' }}>
+      <h2>Futi 2.0 - Reservas</h2>
+      <div style={{ textAlign: 'left', maxWidth: 800, margin: '0 auto' }}>
         <div style={{ marginBottom: 8 }}>
           {path && (
             <button onClick={goUp} aria-label="Go up" style={{ marginRight: 8 }}>
@@ -57,27 +57,47 @@ function FileBrowser() {
         </div>
         {loading && <div>Loading...</div>}
         {error && <div style={{ color: 'red' }}>{error}</div>}
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {items.map((item) => (
+        {/* Folders */}
+        <ul style={{ listStyle: 'none', padding: 0, marginBottom: 24 }}>
+          {items.filter(i => i.type === 'folder').map((item) => (
             <li key={item.key} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-              {item.type === 'folder' ? (
-                <>
-                  <Folder size={18} style={{ marginRight: 6 }} />
-                  <button style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer' }} onClick={() => openFolder(item.name)}>
-                    {item.name}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <FileImage size={18} style={{ marginRight: 6 }} />
-                  <button style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer' }} onClick={() => openImage(item.key)}>
-                    {item.name}
-                  </button>
-                </>
-              )}
+              <Folder size={18} style={{ marginRight: 6 }} />
+              <button style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer' }} onClick={() => openFolder(item.name)}>
+                {item.name}
+              </button>
             </li>
           ))}
         </ul>
+        {/* Images as thumbnails grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 16,
+        }}>
+          {items.filter(i => i.type === 'file').map((item) => (
+            <div key={item.key} style={{ cursor: 'pointer', textAlign: 'center' }} onClick={() => openImage(item.key)}>
+              <div style={{ position: 'relative', width: '100%', paddingBottom: '66%', background: '#f3f3f3', borderRadius: 8, overflow: 'hidden', marginBottom: 6 }}>
+                <img
+                  src={`/api/image?key=${encodeURIComponent(item.key)}`}
+                  alt={item.name}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                  loading="lazy"
+                />
+              </div>
+              <div style={{ fontSize: 14, color: '#333', wordBreak: 'break-all' }}>
+                <FileImage size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                {item.name}
+              </div>
+            </div>
+          ))}
+        </div>
         {preview && (
           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={closePreview}>
             <img src={`/api/image?key=${encodeURIComponent(preview)}`} alt={preview} style={{ maxWidth: '90vw', maxHeight: '90vh', background: '#fff', padding: 8, borderRadius: 8 }} />
